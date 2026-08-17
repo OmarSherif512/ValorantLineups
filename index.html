@@ -688,6 +688,18 @@ async function loadIndex() {
 
 function imageSourceFromValue(value) {
   if (!value) return "";
+
+  try {
+    const parsed = new URL(value);
+    const isBlobUrl = parsed.hostname.includes("blob.vercel-storage.com") || parsed.hostname.includes("private.blob.vercel-storage.com");
+    if (isBlobUrl) {
+      const pathname = parsed.pathname.replace(/^\/+/, "");
+      return `/api/view?pathname=${encodeURIComponent(pathname)}`;
+    }
+  } catch (e) {
+    // fall through for non-URL values
+  }
+
   if (/^https?:\/\//i.test(value)) return value;
   return `/api/view?pathname=${encodeURIComponent(value)}`;
 }
