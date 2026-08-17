@@ -698,8 +698,12 @@ async function uploadImage(id, slot, dataUrl) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, slot, dataUrl })
   });
-  if (!res.ok) throw new Error("upload failed");
-  const body = await res.json();
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.message || body.error || "upload failed");
+  }
+
   return body.pathname || body.url;
 }
 
@@ -993,7 +997,7 @@ async function submitForm(e) {
   } catch (e) {
     saveBtn.disabled = false;
     saveBtn.textContent = "Save lineup";
-    showToast("Image upload failed. Try again.");
+    showToast(e?.message || "Image upload failed. Try again.");
     return;
   }
 

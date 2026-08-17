@@ -1,6 +1,14 @@
 const { list, put, del, get } = require("@vercel/blob");
 
+function assertBlobConfigured() {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN in the Vercel project environment and redeploy.");
+  }
+}
+
 async function getDataArray() {
+  assertBlobConfigured();
+
   const { blobs } = await list({ prefix: "data.json", limit: 1 });
   if (!blobs.length) return [];
 
@@ -13,6 +21,8 @@ async function getDataArray() {
 }
 
 async function saveDataArray(arr) {
+  assertBlobConfigured();
+
   await put("data.json", JSON.stringify(arr), {
     access: "private",
     contentType: "application/json",
@@ -23,6 +33,7 @@ async function saveDataArray(arr) {
 
 async function deleteImages(images) {
   if (!images) return;
+  assertBlobConfigured();
 
   const paths = Object.values(images)
     .filter(Boolean)

@@ -18,6 +18,13 @@ module.exports = async (req, res) => {
     return;
   }
 
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    res.status(500).json({
+      error: "Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN in the Vercel project environment and redeploy."
+    });
+    return;
+  }
+
   const buffer = Buffer.from(match[2], "base64");
 
   try {
@@ -29,6 +36,11 @@ module.exports = async (req, res) => {
     });
     res.status(200).json({ url: blob.url, pathname: blob.pathname });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("Blob upload failed:", e);
+    const message = e?.message || "Image upload failed.";
+    res.status(500).json({
+      error: message,
+      message: message
+    });
   }
 };
