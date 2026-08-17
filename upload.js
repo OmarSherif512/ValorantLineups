@@ -22,12 +22,12 @@ module.exports = async (req, res) => {
 
   try {
     const blob = await put(`images/${id}-${slot}.jpg`, buffer, {
-      access: "public",
+      access: "private",
       contentType: "image/jpeg",
       addRandomSuffix: false,
       allowOverwrite: true
     });
-    res.status(200).json({ url: blob.url });
+    res.status(200).json({ url: blob.url, pathname: blob.pathname });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

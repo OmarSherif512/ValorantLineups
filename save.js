@@ -1,4 +1,4 @@
-const { getDataArray, saveDataArray } = require("./_store");
+const { getDataArray, saveDataArray } = require("./store");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {

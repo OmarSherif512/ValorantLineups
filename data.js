@@ -1,4 +1,4 @@
-const { getDataArray } = require("./_store");
+const { getDataArray } = require("./store");
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {

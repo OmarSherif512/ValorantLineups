@@ -686,6 +686,12 @@ async function loadIndex() {
   }
 }
 
+function imageSourceFromValue(value) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `/api/view?pathname=${encodeURIComponent(value)}`;
+}
+
 async function uploadImage(id, slot, dataUrl) {
   const res = await fetch("/api/upload", {
     method: "POST",
@@ -694,7 +700,7 @@ async function uploadImage(id, slot, dataUrl) {
   });
   if (!res.ok) throw new Error("upload failed");
   const body = await res.json();
-  return body.url;
+  return body.pathname || body.url;
 }
 
 async function saveEntry(entry) {
@@ -808,7 +814,7 @@ function cardNode(item) {
     el("span", { class: "corner br" }),
     el("div", { class: "card-media" }, [
       item.thumb
-        ? el("img", { src: item.thumb, alt: "" })
+        ? el("img", { src: imageSourceFromValue(item.thumb), alt: "" })
         : el("div", { class: "card-media-empty" }, ["No image"])
     ]),
     el("div", { class: "card-body" }, [
@@ -1048,7 +1054,7 @@ async function openDetail(id) {
     const src = detail.images ? detail.images[s.key] : null;
     imgGrid.appendChild(el("div", { class: "detail-slot" }, [
       src
-        ? el("img", { src, alt: s.label })
+        ? el("img", { src: imageSourceFromValue(src), alt: s.label })
         : el("div", { class: "detail-slot-empty" }, ["No image"]),
       el("div", { class: "detail-slot-label" }, [s.label])
     ]));
