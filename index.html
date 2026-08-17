@@ -101,20 +101,6 @@ button, input, select {
   flex-shrink: 0;
 }
 
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 2px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 0.15s;
-}
-.link-btn:hover { color: var(--text-dim); }
-.link-btn.armed { color: var(--red); }
-
 .btn {
   font-family: var(--font-display);
   font-weight: 700;
@@ -370,118 +356,6 @@ main.grid {
 }
 .modal-close:hover { color: var(--text); }
 
-.modal-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 22px;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  margin: 0 0 22px;
-}
-
-.field { margin-bottom: 18px; }
-.field label {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 7px;
-}
-.field input[type="text"], .field select {
-  width: 100%;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  color: var(--text);
-  padding: 11px 13px;
-  font-size: 14px;
-  appearance: none;
-}
-.field select {
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%), linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
-  background-position: calc(100% - 18px) center, calc(100% - 13px) center;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
-.field-hint { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
-.field-row { display: flex; gap: 14px; }
-.field-row .field { flex: 1; }
-
-.diff-pills { display: flex; gap: 8px; }
-.diff-pill {
-  flex: 1;
-  background: var(--bg-elev);
-  border: 1px solid var(--line);
-  color: var(--text-dim);
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 10px 0;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-.diff-pill[data-value="easy"].active { border-color: var(--teal); color: var(--teal); }
-.diff-pill[data-value="medium"].active { border-color: var(--amber); color: var(--amber); }
-.diff-pill[data-value="hard"].active { border-color: var(--red); color: var(--red); }
-
-.image-slots {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.img-slot { display: flex; flex-direction: column; gap: 6px; }
-.img-slot-frame {
-  position: relative;
-  display: block;
-  aspect-ratio: 4 / 3;
-  border: 1px dashed var(--line-strong);
-  cursor: pointer;
-  overflow: hidden;
-  background: var(--bg-elev);
-}
-.img-slot.filled .img-slot-frame { border-style: solid; border-color: var(--line-strong); }
-.img-slot-preview {
-  position: absolute; inset: 0;
-  background-size: cover;
-  background-position: center;
-  display: none;
-}
-.img-slot-placeholder {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 2px;
-  text-align: center;
-  padding: 8px;
-}
-.img-slot-plus { font-size: 20px; color: var(--text-faint); line-height: 1; }
-.img-slot-label {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 13px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-.img-slot-hint { font-size: 10.5px; color: var(--text-faint); }
-.img-slot-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.img-slot-clear {
-  background: none;
-  border: none;
-  color: var(--text-faint);
-  font-size: 11px;
-  cursor: pointer;
-  align-self: flex-end;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.img-slot-clear:hover { color: var(--red); }
-
-.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
-
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
 .detail-map {
   font-family: var(--font-mono);
@@ -543,7 +417,6 @@ main.grid {
 @media (max-width: 560px) {
   .topbar { flex-direction: column; }
   .detail-header { flex-direction: column; }
-  .image-slots { grid-template-columns: 1fr 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -560,10 +433,6 @@ main.grid {
       <h1 class="brand-title">Lineup Vault</h1>
       <p class="brand-sub">Save the setups you don't want to relearn every night — throw spot, path, and result, filed by map.</p>
     </div>
-    <div class="topbar-actions">
-      <button class="link-btn" id="clearAllBtn">Clear all data</button>
-      <button class="btn btn-primary" id="addBtn">+ New lineup</button>
-    </div>
   </header>
 
   <div class="controls">
@@ -575,47 +444,6 @@ main.grid {
 
   <main class="grid" id="grid"></main>
   <div id="emptyState"></div>
-</div>
-
-<div class="modal-backdrop" id="formModal">
-  <div class="modal-panel">
-    <button type="button" class="modal-close" id="closeFormBtn" aria-label="Close">&times;</button>
-    <h2 class="modal-title">New Lineup</h2>
-    <form id="lineupForm">
-      <div class="field">
-        <label for="nameInput">Lineup name</label>
-        <input type="text" id="nameInput" placeholder="e.g. A Site Window Molly" autocomplete="off">
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="mapSelect">Map</label>
-          <select id="mapSelect"></select>
-        </div>
-        <div class="field">
-          <label for="durationInput">Duration</label>
-          <input type="text" id="durationInput" placeholder="e.g. 1.2s throw, 15s smoke" autocomplete="off">
-        </div>
-      </div>
-      <div class="field">
-        <label>Difficulty</label>
-        <div class="diff-pills">
-          <button type="button" class="diff-pill" data-value="easy">Easy</button>
-          <button type="button" class="diff-pill" data-value="medium">Medium</button>
-          <button type="button" class="diff-pill" data-value="hard">Hard</button>
-        </div>
-        <input type="hidden" id="difficultyValue" value="easy">
-      </div>
-      <div class="field">
-        <label>Images</label>
-        <div class="image-slots" id="imageSlots"></div>
-        <p class="field-hint">All four are optional, but position + result make it findable later.</p>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn" id="cancelFormBtn" onclick="document.getElementById('closeFormBtn').click()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="saveBtn">Save lineup</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <div class="modal-backdrop" id="detailModal">
@@ -648,10 +476,7 @@ const state = {
   loading: true,
   activeMap: "All",
   activeDifficulty: "All",
-  search: "",
-  formImages: {},
-  clearArmed: false,
-  deleteArmed: false
+  search: ""
 };
 
 function el(tag, attrs, children) {
@@ -671,94 +496,6 @@ function el(tag, attrs, children) {
   return node;
 }
 
-function genId() {
-  return "ln_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-async function storageGet(key) {
-  try {
-    const res = await window.storage.get(key, false);
-    return res ? res.value : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-async function storageSet(key, value) {
-  try {
-    const res = await window.storage.set(key, value, false);
-    return !!res;
-  } catch (e) {
-    return false;
-  }
-}
-
-async function storageDelete(key) {
-  try {
-    await window.storage.delete(key, false);
-  } catch (e) {}
-}
-
-async function loadIndex() {
-  const raw = await storageGet("lineups-index");
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
-}
-
-async function saveIndex(list) {
-  return storageSet("lineups-index", JSON.stringify(list));
-}
-
-async function saveDetail(id, data) {
-  return storageSet(`lineup:${id}`, JSON.stringify(data));
-}
-
-async function loadDetail(id) {
-  const raw = await storageGet(`lineup:${id}`);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
-}
-
-async function deleteDetail(id) {
-  return storageDelete(`lineup:${id}`);
-}
-
-function resizeFileToDataUrl(file, maxDim, quality) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("read failed"));
-    reader.onload = e => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("decode failed"));
-      img.onload = () => {
-        let w = img.width;
-        let h = img.height;
-        if (w > h) {
-          if (w > maxDim) { h = Math.round(h * (maxDim / w)); w = maxDim; }
-        } else {
-          if (h > maxDim) { w = Math.round(w * (maxDim / h)); h = maxDim; }
-        }
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
 function showToast(msg) {
   const container = document.getElementById("toasts");
   const toast = el("div", { class: "toast" }, [msg]);
@@ -768,6 +505,19 @@ function showToast(msg) {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
   }, 2600);
+}
+
+function thumbFor(images) {
+  if (!images) return null;
+  return images.position || images.showcase || images.reference || images.result || null;
+}
+
+async function loadLineups() {
+  const res = await fetch("data.json", { cache: "no-store" });
+  if (!res.ok) throw new Error("data.json responded with " + res.status);
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error("data.json should be a JSON array");
+  return data.map(item => ({ ...item, thumb: thumbFor(item.images) }));
 }
 
 function filteredIndex() {
@@ -858,16 +608,13 @@ function renderGrid() {
     empty.innerHTML = "";
     const hasAny = state.index.length > 0;
     empty.appendChild(el("div", { class: "empty-title" }, [
-      hasAny ? "Nothing matches this filter" : "No lineups saved yet"
+      hasAny ? "Nothing matches this filter" : "No lineups yet"
     ]));
     empty.appendChild(el("div", { class: "empty-sub" }, [
       hasAny
         ? "Try a different map or difficulty."
-        : (state.activeMap === "All" ? "Add your first lineup to start building the vault." : `Add the first ${state.activeMap} lineup.`)
+        : "Add entries to data.json to start building the vault."
     ]));
-    if (!hasAny || state.activeMap !== "All") {
-      empty.appendChild(el("button", { class: "btn btn-primary", onclick: () => openForm(state.activeMap === "All" ? null : state.activeMap) }, ["+ New lineup"]));
-    }
     return;
   }
 
@@ -879,167 +626,21 @@ function renderGrid() {
     .forEach(item => grid.appendChild(cardNode(item)));
 }
 
-function resetFormImages() {
-  state.formImages = {};
-  SLOT_META.forEach(s => setSlotPreview(s.key, null));
-}
-
-function setSlotPreview(key, dataUrl) {
-  const slot = document.querySelector(`.img-slot[data-key="${key}"]`);
-  if (!slot) return;
-  const preview = slot.querySelector(".img-slot-preview");
-  const placeholder = slot.querySelector(".img-slot-placeholder");
-  if (dataUrl) {
-    preview.style.backgroundImage = `url(${dataUrl})`;
-    preview.style.display = "block";
-    placeholder.style.display = "none";
-    slot.classList.add("filled");
-  } else {
-    preview.style.backgroundImage = "";
-    preview.style.display = "none";
-    placeholder.style.display = "flex";
-    slot.classList.remove("filled");
-  }
-}
-
-async function handleSlotFile(key, file) {
-  if (!file) return;
-  const dataUrl = await resizeFileToDataUrl(file, 1100, 0.74);
-  state.formImages[key] = dataUrl;
-  setSlotPreview(key, dataUrl);
-}
-
-function buildImageSlots() {
-  const wrap = document.getElementById("imageSlots");
-  wrap.innerHTML = "";
-  SLOT_META.forEach(s => {
-    const inputId = "file-" + s.key;
-    const input = el("input", {
-      type: "file",
-      accept: "image/*",
-      id: inputId,
-      class: "img-slot-input",
-      onchange: e => handleSlotFile(s.key, e.target.files[0])
-    });
-    const slot = el("div", { class: "img-slot", "data-key": s.key }, [
-      el("label", { class: "img-slot-frame", for: inputId }, [
-        el("div", { class: "img-slot-preview" }),
-        el("div", { class: "img-slot-placeholder" }, [
-          el("span", { class: "img-slot-plus" }, ["+"]),
-          el("span", { class: "img-slot-label" }, [s.label]),
-          el("span", { class: "img-slot-hint" }, [s.hint])
-        ])
-      ]),
-      input,
-      el("button", {
-        type: "button",
-        class: "img-slot-clear",
-        onclick: () => { delete state.formImages[s.key]; input.value = ""; setSlotPreview(s.key, null); }
-      }, ["Remove"])
-    ]);
-    wrap.appendChild(slot);
-  });
-}
-
-function buildMapOptions(select) {
-  select.innerHTML = "";
-  select.appendChild(el("option", { value: "" }, ["Choose a map"]));
-  MAPS.forEach(m => select.appendChild(el("option", { value: m }, [m])));
-}
-
-function setActiveDifficultyPill(value) {
-  document.querySelectorAll(".diff-pill").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.value === value);
-  });
-  document.getElementById("difficultyValue").value = value;
-}
-
-function openForm(presetMap) {
-  const modal = document.getElementById("formModal");
-  document.getElementById("lineupForm").reset();
-  resetFormImages();
-  buildMapOptions(document.getElementById("mapSelect"));
-  if (presetMap) document.getElementById("mapSelect").value = presetMap;
-  setActiveDifficultyPill("easy");
-  modal.classList.add("open");
-  document.body.classList.add("modal-open");
-  setTimeout(() => document.getElementById("nameInput").focus(), 50);
-}
-
-function closeForm() {
-  document.getElementById("formModal").classList.remove("open");
-  document.body.classList.remove("modal-open");
-}
-
-async function submitForm(e) {
-  e.preventDefault();
-  const name = document.getElementById("nameInput").value.trim();
-  const map = document.getElementById("mapSelect").value;
-  const duration = document.getElementById("durationInput").value.trim();
-  const difficulty = document.getElementById("difficultyValue").value || "easy";
-
-  if (!name || !map) {
-    showToast("Name and map are required.");
-    return;
-  }
-
-  const saveBtn = document.getElementById("saveBtn");
-  saveBtn.disabled = true;
-  saveBtn.textContent = "Saving...";
-
-  const id = genId();
-  const images = {
-    position: state.formImages.position || null,
-    showcase: state.formImages.showcase || null,
-    reference: state.formImages.reference || null,
-    result: state.formImages.result || null
-  };
-  const thumbSource = images.position || images.showcase || images.reference || images.result;
-
-  const detail = { id, name, map, difficulty, duration, images, createdAt: Date.now() };
-  const ok1 = await saveDetail(id, detail);
-
-  const entry = {
-    id, name, map, difficulty, duration,
-    thumb: thumbSource,
-    createdAt: detail.createdAt
-  };
-  state.index.push(entry);
-  const ok2 = await saveIndex(state.index);
-
-  saveBtn.disabled = false;
-  saveBtn.textContent = "Save lineup";
-
-  if (!ok1 || !ok2) {
-    showToast("Couldn't save. Try again.");
-    state.index = state.index.filter(i => i.id !== id);
-    return;
-  }
-
-  closeForm();
-  renderMapTabs();
-  renderGrid();
-  showToast("Lineup saved.");
-}
-
-async function openDetail(id) {
+function openDetail(id) {
   const modal = document.getElementById("detailModal");
   const body = document.getElementById("detailBody");
+  const detail = state.index.find(i => i.id === id);
+
   body.innerHTML = "";
-  body.appendChild(el("div", { class: "detail-loading" }, ["Loading lineup"]));
   modal.classList.add("open");
   document.body.classList.add("modal-open");
-  state.deleteArmed = false;
 
-  const detail = await loadDetail(id);
   if (!detail) {
-    body.innerHTML = "";
-    body.appendChild(el("div", { class: "detail-loading" }, ["Couldn't load this lineup."]));
+    body.appendChild(el("div", { class: "detail-loading" }, ["Couldn't find this lineup."]));
     return;
   }
 
   const diff = DIFFICULTY_META[detail.difficulty] || DIFFICULTY_META.easy;
-  body.innerHTML = "";
   body.appendChild(el("div", { class: "detail-header" }, [
     el("div", {}, [
       el("div", { class: "detail-map" }, [detail.map]),
@@ -1063,36 +664,6 @@ async function openDetail(id) {
     ]));
   });
   body.appendChild(imgGrid);
-
-  const delBtn = el("button", { class: "btn btn-danger", onclick: () => armDelete(id, delBtn) }, ["Delete lineup"]);
-  body.appendChild(el("div", { class: "detail-actions" }, [delBtn]));
-}
-
-function armDelete(id, btn) {
-  if (!state.deleteArmed) {
-    state.deleteArmed = true;
-    btn.textContent = "Click again to confirm";
-    btn.classList.add("armed");
-    setTimeout(() => {
-      if (state.deleteArmed) {
-        state.deleteArmed = false;
-        btn.textContent = "Delete lineup";
-        btn.classList.remove("armed");
-      }
-    }, 3500);
-    return;
-  }
-  performDelete(id);
-}
-
-async function performDelete(id) {
-  await deleteDetail(id);
-  state.index = state.index.filter(i => i.id !== id);
-  await saveIndex(state.index);
-  closeDetail();
-  renderMapTabs();
-  renderGrid();
-  showToast("Lineup deleted.");
 }
 
 function closeDetail() {
@@ -1100,69 +671,29 @@ function closeDetail() {
   document.body.classList.remove("modal-open");
 }
 
-function armClearAll(btn) {
-  if (!state.clearArmed) {
-    state.clearArmed = true;
-    btn.textContent = "Click again to confirm";
-    btn.classList.add("armed");
-    setTimeout(() => {
-      if (state.clearArmed) {
-        state.clearArmed = false;
-        btn.textContent = "Clear all data";
-        btn.classList.remove("armed");
-      }
-    }, 3500);
-    return;
-  }
-  clearAll(btn);
-}
-
-async function clearAll(btn) {
-  btn.disabled = true;
-  for (const item of state.index) {
-    await deleteDetail(item.id);
-  }
-  state.index = [];
-  await saveIndex(state.index);
-  btn.disabled = false;
-  btn.textContent = "Clear all data";
-  btn.classList.remove("armed");
-  state.clearArmed = false;
-  renderMapTabs();
-  renderGrid();
-  showToast("All lineups cleared.");
-}
-
 function wireStaticEvents() {
-  document.getElementById("addBtn").addEventListener("click", () => openForm(state.activeMap === "All" ? null : state.activeMap));
-  document.getElementById("lineupForm").addEventListener("submit", submitForm);
-  document.getElementById("closeFormBtn").addEventListener("click", closeForm);
   document.getElementById("closeDetailBtn").addEventListener("click", closeDetail);
-  document.getElementById("formModal").addEventListener("click", e => { if (e.target.id === "formModal") closeForm(); });
   document.getElementById("detailModal").addEventListener("click", e => { if (e.target.id === "detailModal") closeDetail(); });
   document.getElementById("searchInput").addEventListener("input", e => { state.search = e.target.value; renderGrid(); });
-  document.getElementById("clearAllBtn").addEventListener("click", e => armClearAll(e.currentTarget));
-
-  document.querySelectorAll(".diff-pill").forEach(btn => {
-    btn.addEventListener("click", () => setActiveDifficultyPill(btn.dataset.value));
-  });
 
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape") {
-      closeForm();
-      closeDetail();
-    }
+    if (e.key === "Escape") closeDetail();
   });
 }
 
 async function init() {
-  buildImageSlots();
   wireStaticEvents();
   renderDifficultyChips();
   renderMapTabs();
   renderGrid();
 
-  state.index = await loadIndex();
+  try {
+    state.index = await loadLineups();
+  } catch (e) {
+    state.index = [];
+    showToast("Couldn't load data.json — serve this folder over http, don't open the file directly.");
+  }
+
   state.loading = false;
   renderMapTabs();
   renderGrid();
