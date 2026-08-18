@@ -654,6 +654,18 @@ main.grid {
 .detail-actions { margin-top: 24px; display: flex; justify-content: flex-end; }
 .detail-loading { color: var(--text-dim); font-family: var(--font-mono); font-size: 13px; padding: 30px 0; }
 
+.gallery-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(5, 9, 12, 0.95); backdrop-filter: blur(6px); z-index: 60; padding: 20px; }
+.gallery-modal.open { display: flex; }
+.gallery-container { position: relative; width: 100%; max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center; }
+.gallery-image { max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid var(--line-strong); display: block; }
+.gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0, 0, 0, 0.5); color: var(--text); border: none; width: 44px; height: 44px; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.gallery-nav:hover { background: rgba(0, 0, 0, 0.7); }
+.gallery-nav.prev { left: 20px; }
+.gallery-nav.next { right: 20px; }
+.gallery-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); background: rgba(0, 0, 0, 0.4); padding: 8px 16px; border-radius: 4px; }
+.gallery-close { position: absolute; top: 20px; right: 20px; background: rgba(0, 0, 0, 0.5); border: none; color: var(--text); font-size: 28px; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.gallery-close:hover { background: rgba(0, 0, 0, 0.7); }
+
 .toasts {
   position: fixed;
   bottom: 20px;
@@ -800,6 +812,16 @@ main.grid {
   </div>
 </div>
 
+<div class="gallery-modal" id="galleryModal">
+  <button type="button" class="gallery-close" id="closeGalleryBtn">&times;</button>
+  <div class="gallery-container">
+    <button type="button" class="gallery-nav prev" id="galleryPrev">‹</button>
+    <img class="gallery-image" id="galleryImage" src="" alt="Gallery">
+    <button type="button" class="gallery-nav next" id="galleryNext">›</button>
+    <div class="gallery-counter" id="galleryCounter"></div>
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -833,7 +855,9 @@ const state = {
   search: "",
   formImages: {},
   clearArmed: false,
-  deleteArmed: false
+  deleteArmed: false,
+  galleryImages: [],
+  galleryIndex: 0
 };
 
 function el(tag, attrs, children) {
@@ -1420,7 +1444,7 @@ async function submitForm(e) {
     images,
     createdAt: Date.now()
   };
-  entry.thumb = images.position || images.showcase || images.reference || images.result;
+  entry.thumb = images.result || images.showcase || images.reference || images.position;
 
   const ok = await saveEntry(entry);
 
@@ -1477,11 +1501,18 @@ async function openDetail(id) {
   ]));
 
   const imgGrid = el("div", { class: "detail-grid" }, []);
+  const galleryImages = [];
   SLOT_META.forEach(s => {
     const src = detail.images ? detail.images[s.key] : null;
+    if (src) galleryImages.push({ src, label: s.label });
     imgGrid.appendChild(el("div", { class: "detail-slot" }, [
       src
-        ? el("img", { src: imageSourceFromValue(src), alt: s.label })
+        ? el("img", {
+            src: imageSourceFromValue(src),
+            alt: s.label,
+            style: "cursor: pointer;",
+            onclick: () => openGallery(galleryImages, galleryImages.findIndex(img => img.src === src))
+          })
         : el("div", { class: "detail-slot-empty" }, ["No image"]),
       el("div", { class: "detail-slot-label" }, [s.label])
     ]));
@@ -1525,6 +1556,58 @@ async function performDelete(id) {
 function closeDetail() {
   document.getElementById("detailModal").classList.remove("open");
   document.body.classList.remove("modal-open");
+}
+
+function openGallery(images, startIndex) {
+  state.galleryImages = images.map(img => ({
+    ...img,
+    displaySrc: imageSourceFromValue(img.src)
+  }));
+  state.galleryIndex = startIndex || 0;
+  updateGalleryDisplay();
+  document.getElementById("galleryModal").classList.add("open");
+  document.body.classList.add("modal-open");
+}
+
+function closeGallery() {
+  document.getElementById("galleryModal").classList.remove("open");
+  document.body.classList.remove("modal-open");
+  state.galleryImages = [];
+  state.galleryIndex = 0;
+}
+
+function updateGalleryDisplay() {
+  if (!state.galleryImages.length) return;
+  const img = state.galleryImages[state.galleryIndex];
+  document.getElementById("galleryImage").src = img.displaySrc;
+  document.getElementById("galleryCounter").textContent = `${state.galleryIndex + 1} / ${state.galleryImages.length}`;
+}
+
+function galleryPrev() {
+  if (!state.galleryImages.length) return;
+  state.galleryIndex = (state.galleryIndex - 1 + state.galleryImages.length) % state.galleryImages.length;
+  updateGalleryDisplay();
+}
+
+function galleryNext() {
+  if (!state.galleryImages.length) return;
+  state.galleryIndex = (state.galleryIndex + 1) % state.galleryImages.length;
+  updateGalleryDisplay();
+}
+
+function wireGalleryEvents() {
+  document.getElementById("closeGalleryBtn").addEventListener("click", closeGallery);
+  document.getElementById("galleryPrev").addEventListener("click", galleryPrev);
+  document.getElementById("galleryNext").addEventListener("click", galleryNext);
+  document.getElementById("galleryModal").addEventListener("click", e => {
+    if (e.target.id === "galleryModal") closeGallery();
+  });
+  document.addEventListener("keydown", e => {
+    if (!document.getElementById("galleryModal").classList.contains("open")) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); galleryPrev(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); galleryNext(); }
+    else if (e.key === "Escape") closeGallery();
+  });
 }
 
 function armClearAll(btn) {
@@ -1573,6 +1656,7 @@ function wireStaticEvents() {
   document.getElementById("searchInput").addEventListener("input", e => { state.search = e.target.value; renderGrid(); });
   document.getElementById("siteFilter").addEventListener("change", e => { state.activeSite = e.target.value || "All"; renderGrid(); });
   document.getElementById("clearAllBtn").addEventListener("click", e => armClearAll(e.currentTarget));
+  wireGalleryEvents();
 
   document.querySelectorAll(".diff-pill").forEach(btn => {
     btn.addEventListener("click", () => setActiveDifficultyPill(btn.dataset.value));
