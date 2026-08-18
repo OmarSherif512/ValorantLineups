@@ -352,55 +352,6 @@ button, input, select {
 }
 .map-tab.active .map-tab-count { color: var(--red); }
 
-.drafts-panel {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 12px clamp(16px, 4vw, 40px);
-  border-top: 1px solid var(--line);
-  background: var(--bg-elev);
-  scrollbar-width: thin;
-}
-.drafts-panel::-webkit-scrollbar { height: 4px; }
-.drafts-panel::-webkit-scrollbar-thumb { background: var(--line-strong); }
-
-.draft-card {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-dim);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.draft-card:hover { border-color: var(--text-dim); color: var(--text); }
-.draft-card.active { border-color: var(--red); color: var(--red); background: rgba(255, 70, 85, 0.08); }
-.draft-card-close { font-size: 16px; cursor: pointer; margin-left: 4px; }
-.draft-card-close:hover { color: var(--red); }
-
-.new-draft-btn {
-  flex-shrink: 0;
-  padding: 10px 14px;
-  background: rgba(255, 70, 85, 0.15);
-  border: 2px solid var(--red);
-  border-radius: 4px;
-  color: var(--red);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s;
-}
-.new-draft-btn:hover { background: rgba(255, 70, 85, 0.25); }
-
 main.grid {
   flex: 1;
   display: grid;
@@ -787,11 +738,6 @@ main.grid {
 
   <nav class="map-tabs" id="mapTabs"></nav>
 
-  <div class="drafts-panel" id="draftsPanelContainer">
-    <button class="new-draft-btn" id="newDraftBtn">+ NEW DRAFT</button>
-    <div id="draftsList" style="display: flex; gap: 6px; flex: 1; overflow-x: auto;"></div>
-  </div>
-
   <main class="grid" id="grid"></main>
   <div id="emptyState"></div>
 </div>
@@ -911,9 +857,7 @@ const state = {
   clearArmed: false,
   deleteArmed: false,
   galleryImages: [],
-  galleryIndex: 0,
-  drafts: [],
-  currentDraftId: null
+  galleryIndex: 0
 };
 
 function el(tag, attrs, children) {
@@ -931,145 +875,6 @@ function el(tag, attrs, children) {
     node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
   });
   return node;
-}
-
-function loadDrafts() {
-  try {
-    const saved = sessionStorage.getItem("lineup_drafts");
-    return saved ? JSON.parse(saved) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function saveDrafts() {
-  try {
-    sessionStorage.setItem("lineup_drafts", JSON.stringify(state.drafts));
-  } catch (e) {
-    console.error("Failed to save drafts:", e);
-  }
-}
-
-function createDraft(name) {
-  const draft = {
-    id: "draft_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-    name: name || `Draft ${state.drafts.length + 1}`,
-    map: "",
-    agent: "",
-    site: "",
-    difficulty: "easy",
-    duration: "",
-    images: { position: null, showcase: null, reference: null, result: null },
-    createdAt: Date.now()
-  };
-  state.drafts.push(draft);
-  switchToDraft(draft.id);
-  saveDrafts();
-  renderDraftsPanel();
-  return draft;
-}
-
-function switchToDraft(draftId) {
-  state.currentDraftId = draftId;
-  saveDrafts();
-  renderDraftsPanel();
-}
-
-function getCurrentDraft() {
-  return state.drafts.find(d => d.id === state.currentDraftId);
-}
-
-function updateCurrentDraft(data) {
-  const draft = getCurrentDraft();
-  if (draft) {
-    Object.assign(draft, data);
-    saveDrafts();
-  }
-}
-
-function deleteDraft(draftId) {
-  state.drafts = state.drafts.filter(d => d.id !== draftId);
-  if (state.currentDraftId === draftId) {
-    state.currentDraftId = state.drafts.length > 0 ? state.drafts[0].id : null;
-  }
-  saveDrafts();
-  renderDraftsPanel();
-}
-
-async function finalizeDraft(draftId) {
-  const draft = state.drafts.find(d => d.id === draftId);
-  if (!draft || !draft.name) return;
-
-  const entry = {
-    id: genId(),
-    name: draft.name,
-    map: draft.map,
-    agent: draft.agent || null,
-    site: draft.site || null,
-    difficulty: draft.difficulty,
-    duration: draft.duration,
-    images: draft.images,
-    createdAt: Date.now()
-  };
-  entry.thumb = entry.images.result || entry.images.showcase || entry.images.reference || entry.images.position;
-
-  const ok = await saveEntry(entry);
-  if (ok) {
-    state.index.push(entry);
-    deleteDraft(draftId);
-    showToast(`"${entry.name}" saved to vault!`);
-    renderMapTabs();
-    renderGrid();
-  } else {
-    showToast("Failed to save draft.");
-  }
-}
-
-function renderDraftsPanel() {
-  const draftsList = document.getElementById("draftsList");
-  draftsList.innerHTML = "";
-
-  state.drafts.forEach(draft => {
-    const isActive = state.currentDraftId === draft.id;
-    const card = el("div", {
-      class: "draft-card" + (isActive ? " active" : ""),
-      onclick: () => switchToDraft(draft.id)
-    }, [
-      el("span", {}, [draft.name.slice(0, 16) + (draft.name.length > 16 ? "..." : "")]),
-      el("span", {
-        class: "draft-card-close",
-        onclick: (e) => {
-          e.stopPropagation();
-          const btn = e.target.closest(".draft-card").parentElement.querySelector("button");
-          if (!btn.disabled) {
-            btn.disabled = true;
-            finalizeDraft(draft.id);
-          }
-        },
-        title: "Save to vault"
-      }, ["✓"])
-    ]);
-    draftsList.appendChild(card);
-  });
-}
-
-function wireFormToDraft() {
-  const form = document.getElementById("lineupForm");
-  if (!form) return;
-
-  form.addEventListener("change", () => {
-    const draft = getCurrentDraft();
-    if (!draft) return;
-
-    updateCurrentDraft({
-      name: document.getElementById("nameInput").value || draft.name,
-      map: document.getElementById("mapSelect").value || draft.map,
-      agent: document.getElementById("agentSelectValue").value || draft.agent,
-      site: document.getElementById("siteSelect").value || draft.site,
-      difficulty: document.getElementById("difficultyValue").value || draft.difficulty,
-      duration: document.getElementById("durationInput").value || draft.duration
-    });
-  });
 }
 
 function genId() {
@@ -1582,23 +1387,8 @@ function openForm(presetMap) {
   document.getElementById("siteSelect").value = "";
   updateAgentSelectDisplay();
 
-  const draft = getCurrentDraft();
-  if (draft) {
-    document.getElementById("nameInput").value = draft.name || "";
-    document.getElementById("mapSelect").value = draft.map || "";
-    document.getElementById("durationInput").value = draft.duration || "";
-    document.getElementById("siteSelect").value = draft.site || "";
-    state.formAgent = draft.agent || "";
-    document.getElementById("agentSelectValue").value = state.formAgent;
-    updateAgentSelectDisplay();
-    setActiveDifficultyPill(draft.difficulty || "easy");
-    Object.entries(draft.images).forEach(([key, src]) => {
-      if (src) setSlotPreview(key, src);
-    });
-  } else {
-    if (presetMap) document.getElementById("mapSelect").value = presetMap;
-    setActiveDifficultyPill("easy");
-  }
+  if (presetMap) document.getElementById("mapSelect").value = presetMap;
+  setActiveDifficultyPill("easy");
 
   modal.classList.add("open");
   document.body.classList.add("modal-open");
@@ -1860,7 +1650,6 @@ async function clearAll(btn) {
 
 function wireStaticEvents() {
   document.getElementById("addBtn").addEventListener("click", () => openForm(state.activeMap === "All" ? null : state.activeMap));
-  document.getElementById("newDraftBtn").addEventListener("click", () => createDraft());
   document.getElementById("lineupForm").addEventListener("submit", submitForm);
   document.getElementById("closeFormBtn").addEventListener("click", closeForm);
   document.getElementById("closeDetailBtn").addEventListener("click", closeDetail);
@@ -1870,7 +1659,6 @@ function wireStaticEvents() {
   document.getElementById("siteFilter").addEventListener("change", e => { state.activeSite = e.target.value || "All"; renderGrid(); });
   document.getElementById("clearAllBtn").addEventListener("click", e => armClearAll(e.currentTarget));
   wireGalleryEvents();
-  wireFormToDraft();
 
   document.querySelectorAll(".diff-pill").forEach(btn => {
     btn.addEventListener("click", () => setActiveDifficultyPill(btn.dataset.value));
@@ -1896,14 +1684,6 @@ async function init() {
   renderDifficultyChips();
   renderMapTabs();
   renderGrid();
-
-  state.drafts = loadDrafts();
-  if (state.drafts.length === 0) {
-    createDraft("Quick Sketch");
-  } else {
-    state.currentDraftId = state.drafts[0].id;
-  }
-  renderDraftsPanel();
 
   state.index = await loadIndex();
   state.loading = false;
