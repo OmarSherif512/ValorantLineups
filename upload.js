@@ -2,6 +2,9 @@ const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_BUCKET_NAME = process.env.SUPABASE_BUCKET_NAME || "lineups";
 
+console.log("Called SUPABASE");
+console.log("Supabase bucket name:", SUPABASE_BUCKET_NAME);
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
