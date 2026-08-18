@@ -565,6 +565,11 @@ main.grid {
   cursor: pointer;
   overflow: hidden;
   background: var(--bg-elev);
+  transition: border-color 0.15s, background 0.15s;
+}
+.img-slot-frame.drag-over {
+  border-color: var(--red);
+  background: rgba(255, 70, 85, 0.08);
 }
 .img-slot.filled .img-slot-frame { border-style: solid; border-color: var(--line-strong); }
 .img-slot-preview {
@@ -591,6 +596,16 @@ main.grid {
 }
 .img-slot-hint { font-size: 10.5px; color: var(--text-faint); }
 .img-slot-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.img-slot-url-input {
+  width: 100%;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.img-slot-url-input::placeholder { color: var(--text-faint); }
 .img-slot-clear {
   background: none;
   border: none;
@@ -1206,6 +1221,69 @@ async function handleSlotFile(key, file) {
   const dataUrl = await resizeFileToDataUrl(file, 1100, 0.74);
   state.formImages[key] = dataUrl;
   setSlotPreview(key, dataUrl);
+  const urlInput = document.querySelector(`.img-slot[data-key="${key}"] .img-slot-url-input`);
+  if (urlInput) urlInput.value = "";
+}
+
+async function handleSlotUrl(key, urlValue) {
+  if (!urlValue || !urlValue.trim()) {
+    delete state.formImages[key];
+    setSlotPreview(key, null);
+    return;
+  }
+
+  try {
+    const response = await fetch(urlValue.trim(), { mode: "cors" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const blob = await response.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("Not an image");
+
+    const file = new File([blob], "image.jpg", { type: blob.type });
+    await handleSlotFile(key, file);
+  } catch (e) {
+    showToast(`Failed to load image: ${e.message}`);
+    const urlInput = document.querySelector(`.img-slot[data-key="${key}"] .img-slot-url-input`);
+    if (urlInput) urlInput.value = "";
+  }
+}
+
+async function handleUrlInputPaste(key, event) {
+  const clipboardItems = event.clipboardData?.items;
+  if (!clipboardItems) return;
+  for (const item of clipboardItems) {
+    if (item.kind === "file" && item.type.startsWith("image/")) {
+      event.preventDefault();
+      const blob = item.getAsFile();
+      if (blob) {
+        const file = new File([blob], "pasted.jpg", { type: blob.type });
+        await handleSlotFile(key, file);
+      }
+      return;
+    }
+  }
+}
+
+function setupSlotDragDrop(slot, key, input) {
+  const frame = slot.querySelector(".img-slot-frame");
+  
+  ["dragenter", "dragover", "dragleave", "drop"].forEach(eventName => {
+    frame.addEventListener(eventName, e => e.preventDefault(), false);
+  });
+
+  frame.addEventListener("dragenter", () => frame.classList.add("drag-over"));
+  frame.addEventListener("dragleave", (e) => {
+    if (e.target === frame) frame.classList.remove("drag-over");
+  });
+
+  frame.addEventListener("drop", (e) => {
+    frame.classList.remove("drag-over");
+    const files = e.dataTransfer?.files;
+    if (files && files.length) {
+      const file = Array.from(files).find(f => f.type.startsWith("image/"));
+      if (file) handleSlotFile(key, file);
+    }
+  });
 }
 
 function buildImageSlots() {
@@ -1213,12 +1291,27 @@ function buildImageSlots() {
   wrap.innerHTML = "";
   SLOT_META.forEach(s => {
     const inputId = "file-" + s.key;
+    const urlInputId = "url-" + s.key;
     const input = el("input", {
       type: "file",
       accept: "image/*",
       id: inputId,
       class: "img-slot-input",
       onchange: e => handleSlotFile(s.key, e.target.files[0])
+    });
+    const urlInput = el("input", {
+      type: "text",
+      id: urlInputId,
+      class: "img-slot-url-input",
+      placeholder: "Or paste image URL or Ctrl+V to paste copied image...",
+      onchange: e => handleSlotUrl(s.key, e.target.value),
+      onkeydown: e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleSlotUrl(s.key, e.target.value);
+        }
+      },
+      onpaste: e => handleUrlInputPaste(s.key, e)
     });
     const slot = el("div", { class: "img-slot", "data-key": s.key }, [
       el("label", { class: "img-slot-frame", for: inputId }, [
@@ -1230,12 +1323,19 @@ function buildImageSlots() {
         ])
       ]),
       input,
+      urlInput,
       el("button", {
         type: "button",
         class: "img-slot-clear",
-        onclick: () => { delete state.formImages[s.key]; input.value = ""; setSlotPreview(s.key, null); }
+        onclick: () => {
+          delete state.formImages[s.key];
+          input.value = "";
+          urlInput.value = "";
+          setSlotPreview(s.key, null);
+        }
       }, ["Remove"])
     ]);
+    setupSlotDragDrop(slot, s.key, input);
     wrap.appendChild(slot);
   });
 }
