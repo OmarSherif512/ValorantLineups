@@ -1,5 +1,8 @@
 const { createClient } = require("@supabase/supabase-js");
 
+const SUPABASE_TABLE_NAME = process.env.SUPABASE_TABLE_NAME || "lineups";
+const SUPABASE_BUCKET_NAME = process.env.SUPABASE_BUCKET_NAME || "lineups";
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
@@ -28,7 +31,7 @@ function normalizeRow(row) {
 async function getDataArray() {
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .from("lineups")
+    .from(SUPABASE_TABLE_NAME)
     .select("*")
     .order("created_at", { ascending: false });
 
@@ -40,13 +43,13 @@ async function saveDataArray(arr) {
   const supabase = getSupabase();
 
   if (!arr || !arr.length) {
-    const { error } = await supabase.from("lineups").delete().neq("id", "");
+    const { error } = await supabase.from(SUPABASE_TABLE_NAME).delete().neq("id", "");
     if (error) throw error;
     return;
   }
 
   const rows = arr.map(normalizeRow);
-  const { error } = await supabase.from("lineups").upsert(rows, { onConflict: "id" });
+  const { error } = await supabase.from(SUPABASE_TABLE_NAME).upsert(rows, { onConflict: "id" });
   if (error) throw error;
 }
 
@@ -73,7 +76,7 @@ async function deleteImages(images) {
 
   if (!paths.length) return;
 
-  const { error } = await supabase.storage.from("lineups").remove(paths);
+  const { error } = await supabase.storage.from(SUPABASE_BUCKET_NAME).remove(paths);
   if (error) throw error;
 }
 

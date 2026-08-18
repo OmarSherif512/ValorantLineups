@@ -1,5 +1,7 @@
 const { createClient } = require("@supabase/supabase-js");
 
+const SUPABASE_BUCKET_NAME = process.env.SUPABASE_BUCKET_NAME || "lineups";
+
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
@@ -41,7 +43,7 @@ module.exports = async (req, res) => {
   try {
     const supabase = getSupabase();
     const { data, error } = await supabase.storage
-      .from("lineups")
+      .from(SUPABASE_BUCKET_NAME)
       .upload(filePath, buffer, {
         contentType: "image/jpeg",
         upsert: true
@@ -49,7 +51,7 @@ module.exports = async (req, res) => {
 
     if (error) throw error;
 
-    const { data: publicUrlData } = supabase.storage.from("lineups").getPublicUrl(filePath);
+    const { data: publicUrlData } = supabase.storage.from(SUPABASE_BUCKET_NAME).getPublicUrl(filePath);
     const publicUrl = publicUrlData?.publicUrl || data?.path || filePath;
 
     res.status(200).json({ url: publicUrl, pathname: filePath });
