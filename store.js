@@ -33,6 +33,13 @@ async function getDataArray() {
   console.log("Reading from Supabase table:", SUPABASE_TABLE_NAME);
 
   try {
+    const { data: tableListData, error: tableListError } = await supabase
+      .from("pg_tables")
+      .select("schemaname, tablename")
+      .eq("schemaname", "public");
+
+    console.log("Supabase table list:", tableListData, "tableListError:", tableListError);
+
     const { data, error } = await supabase
       .from(SUPABASE_TABLE_NAME)
       .select("*")
