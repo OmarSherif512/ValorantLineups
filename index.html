@@ -48,6 +48,26 @@ button, input, select {
   color: inherit;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 70, 85, 0.8) rgba(17, 20, 27, 0.7);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(17, 20, 27, 0.7);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255, 70, 85, 0.9), rgba(90, 164, 255, 0.8));
+  border-radius: 999px;
+  border: 2px solid rgba(17, 20, 27, 0.9);
+}
+
 :focus-visible {
   outline: 2px solid var(--teal);
   outline-offset: 2px;
@@ -181,6 +201,93 @@ button, input, select {
   font-size: 13px;
   min-width: 140px;
   clip-path: polygon(var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%, 0 var(--cut-sm));
+}
+
+.agent-dropdown {
+  position: relative;
+  min-width: 180px;
+}
+
+.agent-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  clip-path: polygon(var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%, 0 var(--cut-sm));
+}
+
+.agent-trigger-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.agent-trigger-icon img,
+.agent-option-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.agent-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: none;
+  max-height: 230px;
+  overflow-y: auto;
+  background: var(--bg-elev);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 18px 26px rgba(0, 0, 0, 0.28);
+  z-index: 25;
+}
+
+.agent-dropdown.open .agent-dropdown-menu {
+  display: block;
+}
+
+.agent-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-option:hover,
+.agent-option.active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.agent-option-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  flex-shrink: 0;
 }
 
 .chips {
@@ -586,11 +693,18 @@ main.grid {
     <input class="search-input" id="searchInput" type="text" placeholder="Search lineups by name...">
     <div class="chips" id="difficultyChips"></div>
     <div class="filter-selects">
-      <select class="filter-select" id="agentFilter">
-        <option value="All">All agents</option>
-      </select>
+      <div class="agent-dropdown" id="agentFilterWrap">
+        <button type="button" class="agent-trigger" id="agentFilterBtn">
+          <span class="agent-trigger-icon" id="agentFilterIcon"></span>
+          <span id="agentFilterLabel">All agents</span>
+        </button>
+        <div class="agent-dropdown-menu" id="agentFilterMenu"></div>
+      </div>
       <select class="filter-select" id="siteFilter">
         <option value="All">All sites</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
       </select>
     </div>
   </div>
@@ -622,12 +736,24 @@ main.grid {
       </div>
       <div class="field-row">
         <div class="field">
-          <label for="agentSelect">Agent</label>
-          <select id="agentSelect"></select>
+          <label>Agent</label>
+          <div class="agent-dropdown" id="agentSelectWrap">
+            <button type="button" class="agent-trigger" id="agentSelectBtn">
+              <span class="agent-trigger-icon" id="agentSelectIcon"></span>
+              <span id="agentSelectLabel">Choose an agent</span>
+            </button>
+            <div class="agent-dropdown-menu" id="agentSelectMenu"></div>
+          </div>
+          <input type="hidden" id="agentSelectValue" value="">
         </div>
         <div class="field">
           <label for="siteSelect">Site</label>
-          <select id="siteSelect"></select>
+          <select id="siteSelect">
+            <option value="">Choose a site</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
         </div>
       </div>
       <div class="field">
@@ -663,8 +789,10 @@ main.grid {
 
 <script>
 const MAPS = ["Ascent","Bind","Haven","Split","Icebox","Breeze","Fracture","Pearl","Lotus","Sunset","Abyss","Corrode","Summit"];
-const AGENTS = ["Astra","Breach","Brimstone","Chamber","Cypher","Fade","Gekko","Harbor","Jett","KAY/O","Killjoy","Neon","Omen","Phoenix","Raze","Reyna","Sage","Skye","Sova","Viper","Yoru","Iso","Deadlock","Clove","Vyse"];
-const SITES = ["A","B","C","Mid","Any"];
+const FALLBACK_AGENTS = ["Astra","Breach","Brimstone","Chamber","Cypher","Fade","Gekko","Harbor","Jett","KAY/O","Killjoy","Neon","Omen","Phoenix","Raze","Reyna","Sage","Skye","Sova","Viper","Yoru","Iso","Deadlock","Clove","Vyse"];
+const AGENTS = [...FALLBACK_AGENTS];
+const SITES = ["A","B","C"];
+const AGENT_META = [];
 
 const DIFFICULTY_META = {
   easy: { label: "Easy", color: "var(--teal)" },
@@ -686,6 +814,7 @@ const state = {
   activeDifficulty: "All",
   activeAgent: "All",
   activeSite: "All",
+  formAgent: "",
   search: "",
   formImages: {},
   clearArmed: false,
@@ -861,33 +990,121 @@ function renderDifficultyChips() {
   });
 }
 
-function buildAgentOptions(select) {
-  select.innerHTML = "";
-  select.appendChild(el("option", { value: "" }, ["Choose an agent"]));
-  AGENTS.forEach(agent => select.appendChild(el("option", { value: agent }, [agent])));
+function getAgentMeta(agentName) {
+  if (!agentName) return null;
+  return AGENT_META.find(agent => agent.name === agentName) || null;
 }
 
-function buildSiteOptions(select) {
-  select.innerHTML = "";
-  select.appendChild(el("option", { value: "" }, ["Choose a site"]));
-  SITES.forEach(site => select.appendChild(el("option", { value: site }, [site])));
+function agentIconHtml(agentName, sizeClass = "") {
+  const meta = getAgentMeta(agentName);
+  if (!meta || !meta.icon) {
+    return `<span class="agent-option-icon" style="display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:10px;${sizeClass}">${agentName ? agentName.slice(0, 1).toUpperCase() : "?"}</span>`;
+  }
+  return `<span class="agent-option-icon"><img src="${meta.icon}" alt="${agentName}"></span>`;
+}
+
+function renderAgentMenu(menuId, selectedValue, mode) {
+  const menu = document.getElementById(menuId);
+  menu.innerHTML = "";
+  const choices = mode === "filter"
+    ? [{ value: "All", label: "All agents", icon: "" }, ...AGENTS.map(name => ({ value: name, label: name, icon: getAgentMeta(name)?.icon || "" }))]
+    : [{ value: "", label: "Choose an agent", icon: "" }, ...AGENTS.map(name => ({ value: name, label: name, icon: getAgentMeta(name)?.icon || "" }))];
+
+  choices.forEach(choice => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "agent-option" + (selectedValue === choice.value ? " active" : "");
+    btn.innerHTML = `${choice.icon ? `<span class="agent-option-icon"><img src="${choice.icon}" alt="${choice.label}"></span>` : `<span class="agent-option-icon" style="display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:10px;">${choice.label === "All agents" ? "A" : choice.label ? choice.label.slice(0, 1).toUpperCase() : "?"}</span>`}<span>${choice.label}</span>`;
+    btn.addEventListener("click", () => {
+      if (mode === "filter") {
+        state.activeAgent = choice.value || "All";
+        renderGrid();
+        updateAgentFilterDisplay();
+      } else {
+        state.formAgent = choice.value || "";
+        document.getElementById("agentSelectValue").value = state.formAgent;
+        updateAgentSelectDisplay();
+      }
+      closeAgentMenus();
+    });
+    menu.appendChild(btn);
+  });
+}
+
+function updateAgentFilterDisplay() {
+  const btn = document.getElementById("agentFilterBtn");
+  const icon = document.getElementById("agentFilterIcon");
+  const label = document.getElementById("agentFilterLabel");
+  const meta = getAgentMeta(state.activeAgent);
+  const activeLabel = state.activeAgent === "All" ? "All agents" : state.activeAgent;
+  icon.innerHTML = meta && meta.icon ? `<img src="${meta.icon}" alt="${activeLabel}">` : `<span style="font-size:10px;color:var(--text-dim);">${activeLabel ? activeLabel.slice(0, 1).toUpperCase() : "A"}</span>`;
+  label.textContent = activeLabel;
+  btn.title = activeLabel;
+}
+
+function updateAgentSelectDisplay() {
+  const btn = document.getElementById("agentSelectBtn");
+  const icon = document.getElementById("agentSelectIcon");
+  const label = document.getElementById("agentSelectLabel");
+  const value = state.formAgent || "";
+  const meta = getAgentMeta(value);
+  icon.innerHTML = meta && meta.icon ? `<img src="${meta.icon}" alt="${value}">` : `<span style="font-size:10px;color:var(--text-dim);">${value ? value.slice(0, 1).toUpperCase() : "?"}</span>`;
+  label.textContent = value || "Choose an agent";
+  btn.title = value || "Choose an agent";
+}
+
+function closeAgentMenus() {
+  document.getElementById("agentFilterWrap").classList.remove("open");
+  document.getElementById("agentSelectWrap").classList.remove("open");
+}
+
+function bindAgentDropdowns() {
+  document.getElementById("agentFilterBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    const wrap = document.getElementById("agentFilterWrap");
+    const other = document.getElementById("agentSelectWrap");
+    wrap.classList.toggle("open");
+    other.classList.remove("open");
+  });
+
+  document.getElementById("agentSelectBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    const wrap = document.getElementById("agentSelectWrap");
+    const other = document.getElementById("agentFilterWrap");
+    wrap.classList.toggle("open");
+    other.classList.remove("open");
+  });
+
+  document.addEventListener("click", () => closeAgentMenus());
 }
 
 function buildFilterOptions() {
-  const agentFilter = document.getElementById("agentFilter");
+  renderAgentMenu("agentFilterMenu", state.activeAgent, "filter");
+  updateAgentFilterDisplay();
+
   const siteFilter = document.getElementById("siteFilter");
-
-  agentFilter.innerHTML = "<option value=\"All\">All agents</option>";
-  AGENTS.forEach(agent => agentFilter.appendChild(el("option", { value: agent }, [agent])));
-  agentFilter.value = state.activeAgent;
-
-  siteFilter.innerHTML = "<option value=\"All\">All sites</option>";
-  SITES.forEach(site => siteFilter.appendChild(el("option", { value: site }, [site])));
+  siteFilter.innerHTML = "<option value=\"All\">All sites</option><option value=\"A\">A</option><option value=\"B\">B</option><option value=\"C\">C</option>";
   siteFilter.value = state.activeSite;
+}
+
+async function loadAgentData() {
+  try {
+    const res = await fetch("https://valorant-api.com/v1/agents?isPlayableCharacter=true");
+    if (!res.ok) throw new Error("agent fetch failed");
+    const json = await res.json();
+    const agents = (json.data || []).filter(agent => typeof agent.displayName === "string" && agent.displayIcon);
+    if (agents.length) {
+      AGENT_META.splice(0, AGENT_META.length, ...agents.map(agent => ({ name: agent.displayName, icon: agent.displayIcon })));
+      AGENTS.splice(0, AGENTS.length, ...agents.map(agent => agent.displayName));
+    }
+  } catch (e) {
+    AGENT_META.splice(0, AGENT_META.length, ...FALLBACK_AGENTS.map(name => ({ name, icon: "" })));
+  }
 }
 
 function cardNode(item) {
   const diff = DIFFICULTY_META[item.difficulty] || DIFFICULTY_META.easy;
+  const agentMeta = getAgentMeta(item.agent);
   const card = el("div", { class: "card", tabindex: "0", onclick: () => openDetail(item.id) }, [
     el("span", { class: "corner tl" }),
     el("span", { class: "corner tr" }),
@@ -904,6 +1121,12 @@ function cardNode(item) {
       el("div", { class: "card-meta" }, [
         el("span", { class: "diff-dot", style: `background:${diff.color}` }),
         el("span", { class: "card-diff" }, [diff.label]),
+        agentMeta && agentMeta.icon
+          ? el("span", { style: "display:inline-flex;align-items:center;gap:6px;" }, [
+              el("img", { src: agentMeta.icon, alt: item.agent, style: "width:18px;height:18px;border-radius:50%;object-fit:cover;display:block;" }),
+              el("span", {}, [item.agent])
+            ])
+          : (item.agent ? el("span", {}, [item.agent]) : null),
         item.duration ? el("span", { class: "card-duration" }, [item.duration]) : null
       ])
     ])
@@ -1033,10 +1256,12 @@ function setActiveDifficultyPill(value) {
 function openForm(presetMap) {
   const modal = document.getElementById("formModal");
   document.getElementById("lineupForm").reset();
+  state.formAgent = "";
+  document.getElementById("agentSelectValue").value = "";
   resetFormImages();
   buildMapOptions(document.getElementById("mapSelect"));
-  buildAgentOptions(document.getElementById("agentSelect"));
-  buildSiteOptions(document.getElementById("siteSelect"));
+  document.getElementById("siteSelect").value = "";
+  updateAgentSelectDisplay();
   if (presetMap) document.getElementById("mapSelect").value = presetMap;
   setActiveDifficultyPill("easy");
   modal.classList.add("open");
@@ -1053,7 +1278,7 @@ async function submitForm(e) {
   e.preventDefault();
   const name = document.getElementById("nameInput").value.trim();
   const map = document.getElementById("mapSelect").value;
-  const agent = document.getElementById("agentSelect").value;
+  const agent = document.getElementById("agentSelectValue").value || "";
   const site = document.getElementById("siteSelect").value;
   const duration = document.getElementById("durationInput").value.trim();
   const difficulty = document.getElementById("difficultyValue").value || "easy";
@@ -1129,6 +1354,7 @@ async function openDetail(id) {
   }
 
   const diff = DIFFICULTY_META[detail.difficulty] || DIFFICULTY_META.easy;
+  const agentMeta = getAgentMeta(detail.agent);
   body.appendChild(el("div", { class: "detail-header" }, [
     el("div", {}, [
       el("div", { class: "detail-map" }, [detail.map]),
@@ -1137,7 +1363,14 @@ async function openDetail(id) {
     el("div", { class: "detail-tags" }, [
       el("span", { class: "diff-dot", style: `background:${diff.color}` }),
       el("span", { class: "card-diff" }, [diff.label]),
-      detail.agent ? el("span", {}, [detail.agent]) : null,
+      detail.agent
+        ? (agentMeta && agentMeta.icon
+          ? el("span", { style: "display:inline-flex;align-items:center;gap:6px;" }, [
+              el("img", { src: agentMeta.icon, alt: detail.agent, style: "width:18px;height:18px;border-radius:50%;object-fit:cover;display:block;" }),
+              el("span", {}, [detail.agent])
+            ])
+          : el("span", {}, [detail.agent]))
+        : null,
       detail.site ? el("span", {}, ["Site " + detail.site]) : null,
       detail.duration ? el("span", { class: "card-duration" }, [detail.duration]) : null
     ])
@@ -1238,7 +1471,6 @@ function wireStaticEvents() {
   document.getElementById("formModal").addEventListener("click", e => { if (e.target.id === "formModal") closeForm(); });
   document.getElementById("detailModal").addEventListener("click", e => { if (e.target.id === "detailModal") closeDetail(); });
   document.getElementById("searchInput").addEventListener("input", e => { state.search = e.target.value; renderGrid(); });
-  document.getElementById("agentFilter").addEventListener("change", e => { state.activeAgent = e.target.value || "All"; renderGrid(); });
   document.getElementById("siteFilter").addEventListener("change", e => { state.activeSite = e.target.value || "All"; renderGrid(); });
   document.getElementById("clearAllBtn").addEventListener("click", e => armClearAll(e.currentTarget));
 
@@ -1255,8 +1487,13 @@ function wireStaticEvents() {
 }
 
 async function init() {
+  await loadAgentData();
   buildImageSlots();
+  renderAgentMenu("agentFilterMenu", state.activeAgent, "filter");
+  renderAgentMenu("agentSelectMenu", state.formAgent, "form");
+  bindAgentDropdowns();
   buildFilterOptions();
+  updateAgentSelectDisplay();
   wireStaticEvents();
   renderDifficultyChips();
   renderMapTabs();
