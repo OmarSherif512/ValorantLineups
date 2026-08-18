@@ -1,4 +1,22 @@
-const { get } = require("@vercel/blob");
+const { createClient } = require("@supabase/supabase-js");
+
+const SUPABASE_BUCKET_NAME = process.env.SUPABASE_BUCKET_NAME || "lineups";
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error("Supabase credentials are missing.");
+  }
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -15,22 +33,23 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const result = await get(pathname, { access: "private" });
-    if (!result || result.statusCode !== 200) {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.storage.from(SUPABASE_BUCKET_NAME).download(pathname);
+
+    if (error || !data) {
+      console.error("Supabase download failed:", { pathname, error });
       res.status(404).send("Not found");
       return;
     }
 
-    res.setHeader("Content-Type", result.blob?.contentType || "application/octet-stream");
+    const contentType = data.type || "application/octet-stream";
+    const buffer = Buffer.from(await data.arrayBuffer());
+
+    res.setHeader("Content-Type", contentType);
     res.setHeader("X-Content-Type-Options", "nosniff");
-
-    if (result.stream) {
-      result.stream.pipe(res);
-      return;
-    }
-
-    res.status(200).send(result.body || result.blob || "");
+    res.status(200).end(buffer);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("Supabase view failed:", e);
+    res.status(500).json({ error: e.message || "Image load failed." });
   }
 };
