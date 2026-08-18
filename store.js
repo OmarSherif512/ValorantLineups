@@ -21,11 +21,17 @@ function getSupabase() {
 
 function normalizeRow(row) {
   if (!row) return row;
-  return {
-    ...row,
-    images: row.images || {},
-    thumb: row.thumb || null
-  };
+
+  const normalized = { ...row };
+  if (normalized.createdAt && !normalized.created_at) {
+    normalized.created_at = normalized.createdAt;
+  }
+  delete normalized.createdAt;
+
+  if (!normalized.images) normalized.images = {};
+  if (!normalized.thumb) normalized.thumb = null;
+
+  return normalized;
 }
 
 async function getDataArray() {
@@ -66,6 +72,7 @@ async function saveDataArray(arr) {
   }
 
   const rows = arr.map(normalizeRow);
+  console.log("Normalized rows for Supabase:", rows);
   const { data, error } = await supabase.from(SUPABASE_TABLE_NAME).upsert(rows, { onConflict: "id" });
   console.log("Supabase upsert result:", { data, error });
   if (error) throw error;
