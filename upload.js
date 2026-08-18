@@ -6,6 +6,14 @@ function getSupabase() {
   const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
 
+  console.log("Supabase debug:", {
+    hasUrl: Boolean(url),
+    url,
+    hasKey: Boolean(key),
+    bucket: SUPABASE_BUCKET_NAME,
+    keyPrefix: key ? key.slice(0, 12) : null
+  });
+
   if (!url || !key) {
     throw new Error("Supabase credentials are missing. Add NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL and a Supabase key to the project environment.");
   }
@@ -42,6 +50,8 @@ module.exports = async (req, res) => {
 
   try {
     const supabase = getSupabase();
+    console.log("Uploading to Supabase bucket:", SUPABASE_BUCKET_NAME, "path:", filePath);
+
     const { data, error } = await supabase.storage
       .from(SUPABASE_BUCKET_NAME)
       .upload(filePath, buffer, {
@@ -49,11 +59,14 @@ module.exports = async (req, res) => {
         upsert: true
       });
 
+    console.log("Supabase upload result:", { data, error });
+
     if (error) throw error;
 
     const { data: publicUrlData } = supabase.storage.from(SUPABASE_BUCKET_NAME).getPublicUrl(filePath);
     const publicUrl = publicUrlData?.publicUrl || data?.path || filePath;
 
+    console.log("Supabase public URL:", publicUrl);
     res.status(200).json({ url: publicUrl, pathname: filePath });
   } catch (e) {
     console.error("Supabase upload failed:", e);
