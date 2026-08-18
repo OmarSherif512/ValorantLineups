@@ -167,6 +167,22 @@ button, input, select {
 }
 .search-input::placeholder { color: var(--text-faint); }
 
+.filter-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-select {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  min-width: 140px;
+  clip-path: polygon(var(--cut-sm) 0, 100% 0, 100% calc(100% - var(--cut-sm)), calc(100% - var(--cut-sm)) 100%, 0 100%, 0 var(--cut-sm));
+}
+
 .chips {
   display: flex;
   gap: 8px;
@@ -569,6 +585,14 @@ main.grid {
   <div class="controls">
     <input class="search-input" id="searchInput" type="text" placeholder="Search lineups by name...">
     <div class="chips" id="difficultyChips"></div>
+    <div class="filter-selects">
+      <select class="filter-select" id="agentFilter">
+        <option value="All">All agents</option>
+      </select>
+      <select class="filter-select" id="siteFilter">
+        <option value="All">All sites</option>
+      </select>
+    </div>
   </div>
 
   <nav class="map-tabs" id="mapTabs"></nav>
@@ -594,6 +618,16 @@ main.grid {
         <div class="field">
           <label for="durationInput">Duration</label>
           <input type="text" id="durationInput" placeholder="e.g. 1.2s throw, 15s smoke" autocomplete="off">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="agentSelect">Agent</label>
+          <select id="agentSelect"></select>
+        </div>
+        <div class="field">
+          <label for="siteSelect">Site</label>
+          <select id="siteSelect"></select>
         </div>
       </div>
       <div class="field">
@@ -629,6 +663,8 @@ main.grid {
 
 <script>
 const MAPS = ["Ascent","Bind","Haven","Split","Icebox","Breeze","Fracture","Pearl","Lotus","Sunset","Abyss","Corrode","Summit"];
+const AGENTS = ["Astra","Breach","Brimstone","Chamber","Cypher","Fade","Gekko","Harbor","Jett","KAY/O","Killjoy","Neon","Omen","Phoenix","Raze","Reyna","Sage","Skye","Sova","Viper","Yoru","Iso","Deadlock","Clove","Vyse"];
+const SITES = ["A","B","C","Mid","Any"];
 
 const DIFFICULTY_META = {
   easy: { label: "Easy", color: "var(--teal)" },
@@ -648,6 +684,8 @@ const state = {
   loading: true,
   activeMap: "All",
   activeDifficulty: "All",
+  activeAgent: "All",
+  activeSite: "All",
   search: "",
   formImages: {},
   clearArmed: false,
@@ -785,6 +823,8 @@ function filteredIndex() {
   return state.index.filter(item => {
     if (state.activeMap !== "All" && item.map !== state.activeMap) return false;
     if (state.activeDifficulty !== "All" && item.difficulty !== state.activeDifficulty) return false;
+    if (state.activeAgent !== "All" && (item.agent || "") !== state.activeAgent) return false;
+    if (state.activeSite !== "All" && (item.site || "") !== state.activeSite) return false;
     if (state.search && !item.name.toLowerCase().includes(state.search.toLowerCase())) return false;
     return true;
   });
@@ -819,6 +859,31 @@ function renderDifficultyChips() {
     }, [label]);
     wrap.appendChild(chip);
   });
+}
+
+function buildAgentOptions(select) {
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "" }, ["Choose an agent"]));
+  AGENTS.forEach(agent => select.appendChild(el("option", { value: agent }, [agent])));
+}
+
+function buildSiteOptions(select) {
+  select.innerHTML = "";
+  select.appendChild(el("option", { value: "" }, ["Choose a site"]));
+  SITES.forEach(site => select.appendChild(el("option", { value: site }, [site])));
+}
+
+function buildFilterOptions() {
+  const agentFilter = document.getElementById("agentFilter");
+  const siteFilter = document.getElementById("siteFilter");
+
+  agentFilter.innerHTML = "<option value=\"All\">All agents</option>";
+  AGENTS.forEach(agent => agentFilter.appendChild(el("option", { value: agent }, [agent])));
+  agentFilter.value = state.activeAgent;
+
+  siteFilter.innerHTML = "<option value=\"All\">All sites</option>";
+  SITES.forEach(site => siteFilter.appendChild(el("option", { value: site }, [site])));
+  siteFilter.value = state.activeSite;
 }
 
 function cardNode(item) {
@@ -970,6 +1035,8 @@ function openForm(presetMap) {
   document.getElementById("lineupForm").reset();
   resetFormImages();
   buildMapOptions(document.getElementById("mapSelect"));
+  buildAgentOptions(document.getElementById("agentSelect"));
+  buildSiteOptions(document.getElementById("siteSelect"));
   if (presetMap) document.getElementById("mapSelect").value = presetMap;
   setActiveDifficultyPill("easy");
   modal.classList.add("open");
@@ -986,6 +1053,8 @@ async function submitForm(e) {
   e.preventDefault();
   const name = document.getElementById("nameInput").value.trim();
   const map = document.getElementById("mapSelect").value;
+  const agent = document.getElementById("agentSelect").value;
+  const site = document.getElementById("siteSelect").value;
   const duration = document.getElementById("durationInput").value.trim();
   const difficulty = document.getElementById("difficultyValue").value || "easy";
 
@@ -1016,7 +1085,14 @@ async function submitForm(e) {
   saveBtn.textContent = "Saving...";
 
   const entry = {
-    id, name, map, difficulty, duration, images,
+    id,
+    name,
+    map,
+    agent: agent || null,
+    site: site || null,
+    difficulty,
+    duration,
+    images,
     createdAt: Date.now()
   };
   entry.thumb = images.position || images.showcase || images.reference || images.result;
@@ -1061,6 +1137,8 @@ async function openDetail(id) {
     el("div", { class: "detail-tags" }, [
       el("span", { class: "diff-dot", style: `background:${diff.color}` }),
       el("span", { class: "card-diff" }, [diff.label]),
+      detail.agent ? el("span", {}, [detail.agent]) : null,
+      detail.site ? el("span", {}, ["Site " + detail.site]) : null,
       detail.duration ? el("span", { class: "card-duration" }, [detail.duration]) : null
     ])
   ]));
@@ -1160,6 +1238,8 @@ function wireStaticEvents() {
   document.getElementById("formModal").addEventListener("click", e => { if (e.target.id === "formModal") closeForm(); });
   document.getElementById("detailModal").addEventListener("click", e => { if (e.target.id === "detailModal") closeDetail(); });
   document.getElementById("searchInput").addEventListener("input", e => { state.search = e.target.value; renderGrid(); });
+  document.getElementById("agentFilter").addEventListener("change", e => { state.activeAgent = e.target.value || "All"; renderGrid(); });
+  document.getElementById("siteFilter").addEventListener("change", e => { state.activeSite = e.target.value || "All"; renderGrid(); });
   document.getElementById("clearAllBtn").addEventListener("click", e => armClearAll(e.currentTarget));
 
   document.querySelectorAll(".diff-pill").forEach(btn => {
@@ -1176,6 +1256,7 @@ function wireStaticEvents() {
 
 async function init() {
   buildImageSlots();
+  buildFilterOptions();
   wireStaticEvents();
   renderDifficultyChips();
   renderMapTabs();
