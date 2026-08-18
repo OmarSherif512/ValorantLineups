@@ -30,26 +30,37 @@ function normalizeRow(row) {
 
 async function getDataArray() {
   const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from(SUPABASE_TABLE_NAME)
-    .select("*")
-    .order("created_at", { ascending: false });
+  console.log("Reading from Supabase table:", SUPABASE_TABLE_NAME);
 
-  if (error) throw error;
-  return (data || []).map(normalizeRow);
+  try {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE_NAME)
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    console.log("Supabase table read result:", { data, error });
+    if (error) throw error;
+    return (data || []).map(normalizeRow);
+  } catch (e) {
+    console.error("Supabase read failed:", e);
+    throw e;
+  }
 }
 
 async function saveDataArray(arr) {
   const supabase = getSupabase();
+  console.log("Saving to Supabase table:", SUPABASE_TABLE_NAME, "rows:", arr);
 
   if (!arr || !arr.length) {
-    const { error } = await supabase.from(SUPABASE_TABLE_NAME).delete().neq("id", "");
+    const { data, error } = await supabase.from(SUPABASE_TABLE_NAME).delete().neq("id", "");
+    console.log("Supabase clear result:", { data, error });
     if (error) throw error;
     return;
   }
 
   const rows = arr.map(normalizeRow);
-  const { error } = await supabase.from(SUPABASE_TABLE_NAME).upsert(rows, { onConflict: "id" });
+  const { data, error } = await supabase.from(SUPABASE_TABLE_NAME).upsert(rows, { onConflict: "id" });
+  console.log("Supabase upsert result:", { data, error });
   if (error) throw error;
 }
 
