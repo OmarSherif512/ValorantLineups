@@ -55,6 +55,9 @@ module.exports = async (req, res) => {
     const supabase = getSupabase();
     console.log("Uploading to Supabase bucket:", SUPABASE_BUCKET_NAME, "path:", filePath);
 
+    const { data: bucketListData, error: bucketListError } = await supabase.storage.listBuckets();
+    console.log("Supabase bucket list:", bucketListData, "bucketListError:", bucketListError);
+
     const { data, error } = await supabase.storage
       .from(SUPABASE_BUCKET_NAME)
       .upload(filePath, buffer, {
