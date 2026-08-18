@@ -1,51 +1,80 @@
-const { list, put, del, get } = require("@vercel/blob");
+const { createClient } = require("@supabase/supabase-js");
 
-function assertBlobConfigured() {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    throw new Error("Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN in the Vercel project environment and redeploy.");
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error("Supabase credentials are missing. Add NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL and a Supabase key to the project environment.");
   }
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+}
+
+function normalizeRow(row) {
+  if (!row) return row;
+  return {
+    ...row,
+    images: row.images || {},
+    thumb: row.thumb || null
+  };
 }
 
 async function getDataArray() {
-  assertBlobConfigured();
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("lineups")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  const { blobs } = await list({ prefix: "data.json", limit: 1 });
-  if (!blobs.length) return [];
-
-  const result = await get(blobs[0].pathname, { access: "private" });
-  if (!result || result.statusCode !== 200) return [];
-
-  const text = await new Response(result.stream).text();
-  const arr = JSON.parse(text);
-  return Array.isArray(arr) ? arr : [];
+  if (error) throw error;
+  return (data || []).map(normalizeRow);
 }
 
 async function saveDataArray(arr) {
-  assertBlobConfigured();
+  const supabase = getSupabase();
 
-  await put("data.json", JSON.stringify(arr), {
-    access: "private",
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true
-  });
+  if (!arr || !arr.length) {
+    const { error } = await supabase.from("lineups").delete().neq("id", "");
+    if (error) throw error;
+    return;
+  }
+
+  const rows = arr.map(normalizeRow);
+  const { error } = await supabase.from("lineups").upsert(rows, { onConflict: "id" });
+  if (error) throw error;
 }
 
 async function deleteImages(images) {
   if (!images) return;
-  assertBlobConfigured();
 
+  const supabase = getSupabase();
   const paths = Object.values(images)
     .filter(Boolean)
     .map(value => {
+      if (typeof value !== "string") return null;
       if (value.startsWith("http://") || value.startsWith("https://")) {
-        return new URL(value).pathname.replace(/^\/+/, "");
+        try {
+          const url = new URL(value);
+          const match = url.pathname.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+          return match ? decodeURIComponent(match[1]) : null;
+        } catch (e) {
+          return null;
+        }
       }
       return value;
     })
     .filter(Boolean);
 
-  if (paths.length) await del(paths);
+  if (!paths.length) return;
+
+  const { error } = await supabase.storage.from("lineups").remove(paths);
+  if (error) throw error;
 }
 
 module.exports = { getDataArray, saveDataArray, deleteImages };

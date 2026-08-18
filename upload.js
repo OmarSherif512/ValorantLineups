@@ -1,4 +1,20 @@
-const { put } = require("@vercel/blob");
+const { createClient } = require("@supabase/supabase-js");
+
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error("Supabase credentials are missing. Add NEXT_PUBLIC_VALORANT_LINEUPSSUPABASE_URL and a Supabase key to the project environment.");
+  }
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  });
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -18,29 +34,28 @@ module.exports = async (req, res) => {
     return;
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    res.status(500).json({
-      error: "Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN in the Vercel project environment and redeploy."
-    });
-    return;
-  }
-
   const buffer = Buffer.from(match[2], "base64");
+  const extension = match[1] === "jpeg" ? "jpg" : match[1] || "jpg";
+  const filePath = `images/${id}-${slot}.${extension}`;
 
   try {
-    const blob = await put(`images/${id}-${slot}.jpg`, buffer, {
-      access: "private",
-      contentType: "image/jpeg",
-      addRandomSuffix: false,
-      allowOverwrite: true
-    });
-    res.status(200).json({ url: blob.url, pathname: blob.pathname });
+    const supabase = getSupabase();
+    const { data, error } = await supabase.storage
+      .from("lineups")
+      .upload(filePath, buffer, {
+        contentType: "image/jpeg",
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    const { data: publicUrlData } = supabase.storage.from("lineups").getPublicUrl(filePath);
+    const publicUrl = publicUrlData?.publicUrl || data?.path || filePath;
+
+    res.status(200).json({ url: publicUrl, pathname: filePath });
   } catch (e) {
-    console.error("Blob upload failed:", e);
+    console.error("Supabase upload failed:", e);
     const message = e?.message || "Image upload failed.";
-    res.status(500).json({
-      error: message,
-      message: message
-    });
+    res.status(500).json({ error: message, message });
   }
 };
