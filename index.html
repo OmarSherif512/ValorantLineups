@@ -1071,6 +1071,8 @@ function wireFormToDraft() {
     });
   });
 }
+
+function genId() {
   return "ln_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
